@@ -1,9 +1,13 @@
 const express = require("express");
 
 const { tryCatchWrapper } = require("../../helpers/index");
-const { validateBody } = require("../../middlewares");
+const { validateBody, auth } = require("../../middlewares");
 const { joiRegSchema, joiLogSchema } = require("../../models/user");
-const { register, login } = require("../../controllers/auth.controllers");
+const {
+  register,
+  login,
+  getCurrent,
+} = require("../../controllers/auth.controllers");
 
 const authRouter = express.Router();
 
@@ -14,6 +18,8 @@ authRouter.post(
 );
 
 authRouter.post("/login", validateBody(joiLogSchema), tryCatchWrapper(login));
+
+authRouter.get("/current", tryCatchWrapper(auth), tryCatchWrapper(getCurrent));
 
 module.exports = {
   authRouter,

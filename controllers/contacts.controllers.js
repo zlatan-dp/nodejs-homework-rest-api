@@ -3,7 +3,11 @@ const { Contact } = require("../models/contact.js");
 const createError = require("http-errors");
 
 async function getContacts(req, res, next) {
-  const contacts = await Contact.find({});
+  const { _id } = req.user;
+  const contacts = await Contact.find({ owner: _id }).populate(
+    "owner",
+    "_id email subscription"
+  );
   res.json({
     message: "contacts found",
     data: contacts,
@@ -11,8 +15,9 @@ async function getContacts(req, res, next) {
 }
 
 async function getContactById(req, res, next) {
+  const { _id } = req.user;
   const { contactId } = req.params;
-  const contact = await Contact.findById(contactId);
+  const contact = await Contact.findOne({ owner: _id, _id: contactId });
 
   if (!contact) {
     return next(createError(404, "Contact Not Found"));
@@ -21,13 +26,15 @@ async function getContactById(req, res, next) {
 }
 
 async function addContacts(req, res, next) {
-  const newContact = await Contact.create(req.body);
+  const { _id } = req.user;
+  const newContact = await Contact.create({ ...req.body, owner: _id });
   res.status(201).json({ message: "Contact added", data: newContact });
 }
 
 async function deleteContacts(req, res, next) {
+  const { _id } = req.user;
   const { contactId } = req.params;
-  const contact = await Contact.findById(contactId);
+  const contact = await Contact.findOne({ owner: _id, _id: contactId });
 
   if (!contact) {
     return next(createError(404, "Contact Not Found"));
@@ -38,8 +45,10 @@ async function deleteContacts(req, res, next) {
 }
 
 async function updateContacts(req, res, next) {
+  const { _id } = req.user;
   const { contactId } = req.params;
-  const contact = await Contact.findById(contactId);
+  const contact = await Contact.findOne({ owner: _id, _id: contactId });
+
   if (!contact) {
     return next(createError(404, "Contact Not Found"));
   }
@@ -50,9 +59,12 @@ async function updateContacts(req, res, next) {
 }
 
 async function updateFavorite(req, res, next) {
-  const { contactId } = req.params;
   const { favorite } = req.body;
-  const contact = await Contact.findById(contactId);
+
+  const { _id } = req.user;
+  const { contactId } = req.params;
+  const contact = await Contact.findOne({ owner: _id, _id: contactId });
+
   if (!contact) {
     return next(createError(404, "Contact Not Found"));
   }
