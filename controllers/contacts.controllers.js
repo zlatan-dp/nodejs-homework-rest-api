@@ -4,10 +4,12 @@ const createError = require("http-errors");
 
 async function getContacts(req, res, next) {
   const { _id } = req.user;
-  const contacts = await Contact.find({ owner: _id }).populate(
-    "owner",
-    "_id email subscription"
-  );
+  const { page = 1, limit = 10, favorite = [true, false] } = req.query;
+  const skip = (page - 1) * limit;
+  const contacts = await Contact.find({ owner: _id, favorite }, "", {
+    skip,
+    limit: Number(limit),
+  }).populate("owner", "_id email subscription");
   res.json({
     message: "contacts found",
     data: contacts,

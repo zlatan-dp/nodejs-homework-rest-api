@@ -41,12 +41,18 @@ async function login(req, res, next) {
   };
 
   const token = jwt.sign(payload, SECRET_KEY, { expiresIn: "1h" });
-
+  await User.findByIdAndUpdate(storedUser._id, { token });
   return res.json({
     data: {
       token,
     },
   });
+}
+
+async function logout(req, res, next) {
+  const { _id } = req.user;
+  await User.findByIdAndUpdate(_id, { token: null });
+  res.status(204).json();
 }
 
 async function getCurrent(req, res, next) {
@@ -62,5 +68,6 @@ async function getCurrent(req, res, next) {
 module.exports = {
   register,
   login,
+  logout,
   getCurrent,
 };

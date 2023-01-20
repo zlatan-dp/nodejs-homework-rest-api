@@ -6,6 +6,7 @@ const { joiRegSchema, joiLogSchema } = require("../../models/user");
 const {
   register,
   login,
+  logout,
   getCurrent,
 } = require("../../controllers/auth.controllers");
 
@@ -18,6 +19,8 @@ authRouter.post(
 );
 
 authRouter.post("/login", validateBody(joiLogSchema), tryCatchWrapper(login));
+
+authRouter.get("/logout", tryCatchWrapper(auth), tryCatchWrapper(logout));
 
 authRouter.get("/current", tryCatchWrapper(auth), tryCatchWrapper(getCurrent));
 
