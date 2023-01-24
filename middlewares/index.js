@@ -1,6 +1,9 @@
 const createError = require("http-errors");
 const jwt = require("jsonwebtoken");
 
+const multer = require("multer");
+const path = require("path");
+
 const { User } = require("../models/user");
 const { SECRET_KEY } = process.env;
 
@@ -41,7 +44,23 @@ async function auth(req, res, next) {
   }
 }
 
+const tempDir = path.join(__dirname, "../temp");
+
+const multerConfig = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, tempDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({
+  storage: multerConfig,
+});
+
 module.exports = {
   validateBody,
   auth,
+  upload,
 };
