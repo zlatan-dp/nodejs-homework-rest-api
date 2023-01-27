@@ -1,8 +1,12 @@
 const createError = require("http-errors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const gravatar = require("gravatar");
+const path = require("path");
+const fs = require("fs/promises");
 
 const { User } = require("../models/user");
+const Jimp = require("jimp");
 const { SECRET_KEY } = process.env;
 
 async function register(req, res, next) {
@@ -11,15 +15,20 @@ async function register(req, res, next) {
   const salt = await bcrypt.genSalt();
   const hashedPassword = await bcrypt.hash(password, salt);
 
+  const avatarURL = gravatar.url(email);
+
   try {
     await User.create({
       password: hashedPassword,
       email,
       subscription,
+      avatarURL,
     });
-    res
-      .status(201)
-      .json({ message: "Created user", user: { email, subscription } });
+
+    res.status(201).json({
+      message: "Created user",
+      user: { email, subscription, avatarURL },
+    });
   } catch (error) {
     if (error.message.includes("E11000 duplicate key error collection")) {
       return next(createError(409, `User with email '${email}' already exist`));
@@ -65,9 +74,31 @@ async function getCurrent(req, res, next) {
   });
 }
 
+async function updateAvatar(req, res, next) {
+  const { path: tempUpload, originalname } = req.file;
+  const { _id: id } = req.user;
+  const avatarName = `${id}_${originalname}`;
+  try {
+    const resultUpload = path.join(__dirname, "../public/avatars", avatarName);
+    await fs.rename(tempUpload, resultUpload);
+    const avatarURL = path.join("public", "avatars", avatarName);
+    await User.findByIdAndUpdate(req.user._id, { avatarURL });
+    Jimp.read(resultUpload, (error, image) => {
+      if (error) throw error;
+      image.resize(250, 250).write(resultUpload);
+    });
+
+    res.json({ avatarURL });
+  } catch (error) {
+    await fs.unlink(tempUpload);
+    throw error;
+  }
+}
+
 module.exports = {
   register,
   login,
   logout,
   getCurrent,
+  updateAvatar,
 };
