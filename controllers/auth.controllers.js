@@ -24,6 +24,7 @@ async function register(req, res, next) {
       subscription,
       avatarURL,
     });
+
     res.status(201).json({
       message: "Created user",
       user: { email, subscription, avatarURL },
@@ -72,12 +73,6 @@ async function getCurrent(req, res, next) {
     },
   });
 }
-
-// async function resizeAvatar(path) {
-//   const avatar = await Jimp.read(path);
-//   await avatar.resize(250, 250);
-//   await avatar.writeAsync("new");
-// }
 
 async function updateAvatar(req, res, next) {
   const { path: tempUpload, originalname } = req.file;
