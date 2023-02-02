@@ -1,12 +1,13 @@
-FROM node
+FROM node:18.12.1
 
-WORKDIR /phonebook-api
+WORKDIR /app
 
-COPY . .
+COPY package.json .
 
 RUN npm install
 
+COPY . .
+
 EXPOSE 3000
 
-CMD ['node', 'server.js']
-
+CMD ['npm', 'start']
