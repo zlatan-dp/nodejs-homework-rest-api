@@ -11,4 +11,8 @@ const joiLogSchema = Joi.object({
   email: Joi.string().email().required(),
 });
 
-module.exports = { joiRegSchema, joiLogSchema };
+const joiVerEmailSchema = Joi.object({
+  email: Joi.string().email().required(),
+});
+
+module.exports = { joiRegSchema, joiLogSchema, joiVerEmailSchema };

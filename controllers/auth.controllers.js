@@ -4,10 +4,12 @@ const jwt = require("jsonwebtoken");
 const gravatar = require("gravatar");
 const path = require("path");
 const fs = require("fs/promises");
+const { nanoid } = require("nanoid");
 
 const { User } = require("../models/user");
 const Jimp = require("jimp");
 const { SECRET_KEY } = process.env;
+const { sendMail } = require("../helpers");
 
 async function register(req, res, next) {
   const { password, email, subscription } = req.body;
@@ -18,11 +20,20 @@ async function register(req, res, next) {
   const avatarURL = gravatar.url(email);
 
   try {
+    const verifyId = nanoid();
+
     await User.create({
       password: hashedPassword,
       email,
       subscription,
       avatarURL,
+      verificationToken: verifyId,
+    });
+
+    await sendMail({
+      to: email,
+      subject: "please confirm your email",
+      html: `<h1>Confirm your email</h1> <a href="http://localhost:3000/api/users/verify/${verifyId}">confirm</a>`,
     });
 
     res.status(201).json({
@@ -43,6 +54,10 @@ async function login(req, res, next) {
 
   if (!storedUser || !storedUser.comparePassword(password)) {
     return next(createError(401, "Email or password is wrong"));
+  }
+
+  if (!storedUser.verify) {
+    return next(createError(401, "Email is not verified"));
   }
 
   const payload = {
@@ -95,10 +110,50 @@ async function updateAvatar(req, res, next) {
   }
 }
 
+async function verifyEmail(req, res, next) {
+  const { verificationToken } = req.params;
+  const user = await User.findOne({ verificationToken });
+
+  if (!user) {
+    return next(createError(404, "Not found"));
+  }
+
+  await User.findByIdAndUpdate(user._id, {
+    verify: true,
+    verificationToken: "",
+  });
+
+  return res.json({
+    message: "Verification successful",
+  });
+}
+
+async function reVerifyEmail(req, res, next) {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return next(createError(404, "Not found"));
+  }
+  if (user.verify) {
+    return next(createError(400, "Verification has already been passed"));
+  }
+
+  await sendMail({
+    to: email,
+    subject: "please confirm your email",
+    html: `<h1>Confirm your email</h1> <a href="http://localhost:3000/api/users/verify/${user.verificationToken}">confirm</a>`,
+  });
+  return res.json({
+    message: "Verification email sent",
+  });
+}
 module.exports = {
   register,
   login,
   logout,
   getCurrent,
   updateAvatar,
+  verifyEmail,
+  reVerifyEmail,
 };
